@@ -51,6 +51,13 @@ $(document).ready(function() {
     // Poll for results and progress
     function checkStatus() {
         $.get(`/ajax/status/${sessionId}/`, function(data) {
+            // If the server reports the session wasn't found, show an error
+            // and stop polling to avoid an endless loading state.
+            if (data && data.status === 'not_found') {
+                $('#loadingSpinner').html('<div class="alert alert-danger">Session not found. Please try uploading your image again.</div>');
+                return;
+            }
+
             // Update progress bar
             const progress = data.progress || 0;
             const step = data.step || '';
@@ -68,7 +75,14 @@ $(document).ready(function() {
             } else {
                 setTimeout(checkStatus, 1500); // Check every 1.5 seconds
             }
-        }).fail(function() {
+        }).fail(function(jqXHR) {
+            // If the request fails repeatedly (network or server error), show
+            // a brief message and try again after a longer delay. If it's a
+            // 404 at transport level, show a friendly error.
+            if (jqXHR && jqXHR.status === 404) {
+                $('#loadingSpinner').html('<div class="alert alert-danger">Session not found (404). Please re-upload your image.</div>');
+                return;
+            }
             setTimeout(checkStatus, 3000);
         });
     }

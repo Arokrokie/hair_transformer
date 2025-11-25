@@ -300,4 +300,15 @@ class AjaxProcessingView(View):
                 }
             )
         except HairTransformation.DoesNotExist:
-            return JsonResponse({"error": "Session not found"}, status=404)
+            # Return a JSON payload (200) rather than an HTTP 404 so the
+            # client-side polling can handle a missing session gracefully
+            # without producing noisy 404 logs in the server.
+            return JsonResponse(
+                {
+                    "processed": False,
+                    "status": "not_found",
+                    "progress": 0,
+                    "error": "Session not found",
+                },
+                status=200,
+            )

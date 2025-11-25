@@ -82,7 +82,30 @@ class SkinToneAwareHairTransformation:
     def _load_segformer_model(self):
         """Load SegFormer either from a bundled directory or Hugging Face Hub."""
         print("📦 Loading SegFormer model for hair segmentation...")
-        candidates = []
+        
+        # Check if we can use cached models
+        if hasattr(self.__class__, '_cached_processor') and hasattr(self.__class__, '_cached_model'):
+            print("   ♻️ Using cached SegFormer model")
+            self.processor = self.__class__._cached_processor
+            self.model = self.__class__._cached_model
+            self.segformer_source = self.__class__._cached_source
+            self.models_used.append(f"{self.segformer_source} (Hair Segmentation - Cached)")
+            return
+        
+        # Determine device
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"   🔧 Using device: {device}")
+        
+        # Prioritize Hugging Face Hub for better performance
+        candidates = [
+            {
+                "label": "Hugging Face Hub (mattmdjaga/segformer_b2_clothes)",
+                "model_id": "mattmdjaga/segformer_b2_clothes",
+                "kwargs": {},
+            }
+        ]
+        
+        # Add local bundle as fallback
         if self.segformer_dir.exists():
             candidates.append(
                 {
@@ -91,29 +114,53 @@ class SkinToneAwareHairTransformation:
                     "kwargs": {"local_files_only": True},
                 }
             )
-        candidates.append(
-            {
-                "label": "Hugging Face Hub (mattmdjaga/segformer_b2_clothes)",
-                "model_id": "mattmdjaga/segformer_b2_clothes",
-                "kwargs": {},
-            }
-        )
 
         for candidate in candidates:
             try:
                 print(f"   🔍 Trying SegFormer source: {candidate['label']}")
+                
+                # Load processor
                 self.processor = AutoImageProcessor.from_pretrained(
                     candidate["model_id"], **candidate["kwargs"]
                 )
+                
+                # Load model with optimizations
                 self.model = AutoModelForSemanticSegmentation.from_pretrained(
                     candidate["model_id"], **candidate["kwargs"]
                 )
+                
+                # Move to device and optimize
+                self.model = self.model.to(device)
+                self.model.eval()  # Set to evaluation mode
+                
+                # Enable inference optimizations
+                if device.type == "cpu":
+                    # CPU optimizations
+                    try:
+                        self.model = torch.jit.script(self.model)
+                        print("   ⚡ Applied TorchScript optimization")
+                    except Exception as e:
+                        print(f"   ⚠ TorchScript optimization failed: {e}")
+                else:
+                    # GPU optimizations
+                    try:
+                        self.model = self.model.half()  # Use half precision
+                        print("   ⚡ Applied half precision optimization")
+                    except Exception as e:
+                        print(f"   ⚠ Half precision optimization failed: {e}")
+                
+                # Cache the loaded models for reuse
+                self.__class__._cached_processor = self.processor
+                self.__class__._cached_model = self.model
+                self.__class__._cached_source = candidate["label"]
+                
                 self.models_used.append(
                     f"{candidate['label']} (Hair Segmentation)"
                 )
                 self.segformer_source = candidate["label"]
-                print(f"✅ SegFormer loaded from {candidate['label']}")
+                print(f"✅ SegFormer loaded and optimized from {candidate['label']}")
                 return
+                
             except Exception as e:
                 print(f"   ⚠ Failed to load from {candidate['label']}: {e}")
 
@@ -121,6 +168,22 @@ class SkinToneAwareHairTransformation:
         self.processor = None
         self.model = None
         self.segformer_source = None
+
+    @classmethod
+    def clear_model_cache(cls):
+        """Clear cached models to free memory"""
+        if hasattr(cls, '_cached_processor'):
+            del cls._cached_processor
+        if hasattr(cls, '_cached_model'):
+            del cls._cached_model
+        if hasattr(cls, '_cached_source'):
+            del cls._cached_source
+        
+        # Force garbage collection
+        gc.collect()
+        if torch and torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        print("🧹 Model cache cleared")
 
     def _initialize_hairstyle_models(self):
         """Initialize hairstyle transformation models (use inpainting pipeline)"""
@@ -948,14 +1011,34 @@ class SkinToneAwareHairTransformation:
             print("   🔍 Detecting face for head hair extraction...")
             face_features, _, _ = self.detect_face_comprehensive(image)
 
+            # Optimize inference
+            device = next(self.model.parameters()).device
             inputs = self.processor(images=image, return_tensors="pt")
+            
+            # Move inputs to same device as model
+            if hasattr(inputs, 'pixel_values'):
+                inputs['pixel_values'] = inputs['pixel_values'].to(device)
+            
+            # Use autocast for mixed precision if available
             with torch.no_grad():
-                outputs = self.model(**inputs)
-                logits = outputs.logits  # (1, C, h, w)
+                if device.type == "cuda":
+                    with torch.cuda.amp.autocast():
+                        outputs = self.model(**inputs)
+                        logits = outputs.logits  # (1, C, h, w)
+                else:
+                    outputs = self.model(**inputs)
+                    logits = outputs.logits  # (1, C, h, w)
 
+            # Move back to CPU for post-processing
+            logits = logits.cpu()
+            
             upsampled_logits = torch.nn.functional.interpolate(
                 logits, size=image.size[::-1], mode="bilinear", align_corners=False
             )
+
+            # Clean up GPU memory if using CUDA
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
 
             image_np = np.array(image)
             # choose class index for hair using improved method
