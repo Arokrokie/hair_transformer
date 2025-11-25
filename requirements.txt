@@ -22,9 +22,11 @@ opencv-python==4.12.0.88
 transformers==4.57.2
 safetensors==0.7.0
 scikit-learn==1.6.1
+torch==2.9.0+cpu
+torchvision==0.24.0+cpu
 
 # Networking / helpers
 requests==2.32.5
 python-dotenv==1.0.0
 
-# Torch/torchvision are required for SegFormer; install CPU wheels in your build step.
+# Torch/torchvision pins target CPU wheels; keep the '+cpu' suffix to avoid CUDA downloads.
