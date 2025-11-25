@@ -1,0 +1,111 @@
+{
+    "bomFormat": "CycloneDX",
+    "specVersion": "1.6",
+    "serialNumber": "urn:uuid:efaab1cf-c09e-495a-9d76-54604e1e8c37",
+    "version": 1,
+    "metadata": {
+        "timestamp": "2025-06-05T09:34:49.062306+00:00",
+        "component": {
+            "type": "machine-learning-model",
+            "bom-ref": "mattmdjaga/segformer_b2_clothes-ea4ad23a-7fca-57ca-9b50-5cbca9a21441",
+            "name": "mattmdjaga/segformer_b2_clothes",
+            "externalReferences": [
+                {
+                    "url": "https://huggingface.co/mattmdjaga/segformer_b2_clothes",
+                    "type": "documentation"
+                }
+            ],
+            "modelCard": {
+                "modelParameters": {
+                    "task": "image-segmentation",
+                    "architectureFamily": "segformer",
+                    "modelArchitecture": "SegformerForSemanticSegmentation",
+                    "datasets": [
+                        {
+                            "ref": "mattmdjaga/human_parsing_dataset-2f113f97-be86-5ece-a359-cb1d9aa1cb78"
+                        }
+                    ]
+                },
+                "properties": [
+                    {
+                        "name": "library_name",
+                        "value": "transformers"
+                    }
+                ]
+            },
+            "authors": [
+                {
+                    "name": "mattmdjaga"
+                }
+            ],
+            "licenses": [
+                {
+                    "license": {
+                        "id": "MIT",
+                        "url": "https://spdx.org/licenses/MIT.html"
+                    }
+                }
+            ],
+            "tags": [
+                "transformers",
+                "pytorch",
+                "onnx",
+                "safetensors",
+                "segformer",
+                "vision",
+                "image-segmentation",
+                "dataset:mattmdjaga/human_parsing_dataset",
+                "arxiv:2105.15203",
+                "license:mit",
+                "endpoints_compatible",
+                "region:us"
+            ]
+        }
+    },
+    "components": [
+        {
+            "type": "data",
+            "bom-ref": "mattmdjaga/human_parsing_dataset-2f113f97-be86-5ece-a359-cb1d9aa1cb78",
+            "name": "mattmdjaga/human_parsing_dataset",
+            "data": [
+                {
+                    "type": "dataset",
+                    "bom-ref": "mattmdjaga/human_parsing_dataset-2f113f97-be86-5ece-a359-cb1d9aa1cb78",
+                    "name": "mattmdjaga/human_parsing_dataset",
+                    "contents": {
+                        "url": "https://huggingface.co/datasets/mattmdjaga/human_parsing_dataset",
+                        "properties": [
+                            {
+                                "name": "task_categories",
+                                "value": "image-segmentation"
+                            },
+                            {
+                                "name": "task_ids",
+                                "value": "semantic-segmentation"
+                            },
+                            {
+                                "name": "size_categories",
+                                "value": "10K<n<100K"
+                            },
+                            {
+                                "name": "configs",
+                                "value": "Name of the dataset subset: default {\"split\": \"train\", \"path\": \"data/train-*\"}"
+                            }
+                        ]
+                    },
+                    "governance": {
+                        "owners": [
+                            {
+                                "organization": {
+                                    "name": "mattmdjaga",
+                                    "url": "https://huggingface.co/mattmdjaga"
+                                }
+                            }
+                        ]
+                    },
+                    "description": "\n\t\n\t\t\n\t\tDataset Card for Human parsing data (ATR)\n\t\n\n\n\t\n\t\t\n\t\tDataset Summary\n\t\n\nThis dataset has 17,706 images and mask pairs. It is just a copy of \nDeep Human Parsing ATR dataset. The mask labels are: \n \"0\": \"Background\",\n    \"1\": \"Hat\",\n    \"2\": \"Hair\",\n    \"3\": \"Sunglasses\",\n    \"4\": \"Upper-clothes\",\n    \"5\": \"Skirt\",\n    \"6\": \"Pants\",\n    \"7\": \"Dress\",\n    \"8\": \"Belt\",\n    \"9\": \"Left-shoe\",\n    \"10\": \"Right-shoe\",\n    \"11\": \"Face\",\n    \"12\": \"Left-leg\",\n    \"13\": \"Right-leg\",\n    \"14\":\u2026 See the full description on the dataset page: https://huggingface.co/datasets/mattmdjaga/human_parsing_dataset."
+                }
+            ]
+        }
+    ]
+}

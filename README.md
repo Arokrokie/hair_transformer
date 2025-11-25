@@ -51,10 +51,12 @@ Environment variables
 
 - `DJANGO_SECRET_KEY` (optional) — if not set, a default development key is used (do not use in production).
 - `DATABASE_URL` / DB settings — the project uses SQLite by default (`db.sqlite3`). For production, configure a proper DB and update `hair_project/settings.py` accordingly.
+- `SEGFORMER_MODEL_PATH` (optional) — set this if you move the bundled SegFormer directory; defaults to `<project_root>/segformer_b2_clothes`.
 
 Notes about models, large dependencies, and deployment
 
 - The runtime now only needs PyTorch/torchvision (for the SegFormer model) plus Hugging Face `transformers`. Install CPU wheels manually so pip does not attempt CUDA builds.
+- A copy of the SegFormer weights lives in `segformer_b2_clothes/`. The loader attempts that folder first (or the path in `SEGFORMER_MODEL_PATH`) before falling back to Hugging Face, eliminating cold-start downloads on Render.
 - No local Stable Diffusion or diffusers pipelines run anymore; hairstyle generation flows exclusively through the Replicate API, so there are no extra ML downloads beyond SegFormer.
 - Do NOT commit your `venv/` or any large model caches to the repository. Use Git LFS or external object storage if you need to persist downloaded weights.
 

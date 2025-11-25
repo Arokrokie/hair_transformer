@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 import warnings
 import logging
 import gc
+from pathlib import Path
 
 # Heavy native/ML imports — wrap in try/except so the module can be imported
 # on CPU-only or minimal hosts without crashing the WSGI process.
@@ -41,10 +42,20 @@ os.environ["DISABLE_TQDM"] = "1"
 # Load a hair segmentation model
 from transformers import AutoImageProcessor, AutoModelForSemanticSegmentation
 
+BASE_DIR = Path(__file__).resolve().parents[2]
+DEFAULT_SEGFORMER_DIR = BASE_DIR / "segformer_b2_clothes"
+
 
 class SkinToneAwareHairTransformation:
     def __init__(self, use_hairstyle_ai=True):
         self.hairstyles_dataset = []
+        segformer_override = os.environ.get("SEGFORMER_MODEL_PATH")
+        self.segformer_dir = (
+            Path(segformer_override).expanduser()
+            if segformer_override
+            else DEFAULT_SEGFORMER_DIR
+        )
+        self.segformer_source = None
         try:
             self.face_cascade = cv2.CascadeClassifier(
                 cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
@@ -57,22 +68,9 @@ class SkinToneAwareHairTransformation:
         self.models_used = []
 
         # Load the SegFormer model for hair segmentation
-        print("📦 Loading SegFormer model for hair segmentation...")
-        try:
-            self.processor = AutoImageProcessor.from_pretrained(
-                "mattmdjaga/segformer_b2_clothes"
-            )
-            self.model = AutoModelForSemanticSegmentation.from_pretrained(
-                "mattmdjaga/segformer_b2_clothes"
-            )
-            self.models_used.append(
-                "mattmdjaga/segformer_b2_clothes (Hair Segmentation)"
-            )
-            print("✅ SegFormer model loaded successfully")
-        except Exception as e:
-            print(f"   ⚠ Could not load SegFormer: {e}")
-            self.processor = None
-            self.model = None
+        self.processor = None
+        self.model = None
+        self._load_segformer_model()
 
         # Hairstyle transformation models
         self.use_hairstyle_ai = use_hairstyle_ai
@@ -80,6 +78,49 @@ class SkinToneAwareHairTransformation:
 
         if use_hairstyle_ai:
             self._initialize_hairstyle_models()
+
+    def _load_segformer_model(self):
+        """Load SegFormer either from a bundled directory or Hugging Face Hub."""
+        print("📦 Loading SegFormer model for hair segmentation...")
+        candidates = []
+        if self.segformer_dir.exists():
+            candidates.append(
+                {
+                    "label": f"local bundle ({self.segformer_dir})",
+                    "model_id": str(self.segformer_dir),
+                    "kwargs": {"local_files_only": True},
+                }
+            )
+        candidates.append(
+            {
+                "label": "Hugging Face Hub (mattmdjaga/segformer_b2_clothes)",
+                "model_id": "mattmdjaga/segformer_b2_clothes",
+                "kwargs": {},
+            }
+        )
+
+        for candidate in candidates:
+            try:
+                print(f"   🔍 Trying SegFormer source: {candidate['label']}")
+                self.processor = AutoImageProcessor.from_pretrained(
+                    candidate["model_id"], **candidate["kwargs"]
+                )
+                self.model = AutoModelForSemanticSegmentation.from_pretrained(
+                    candidate["model_id"], **candidate["kwargs"]
+                )
+                self.models_used.append(
+                    f"{candidate['label']} (Hair Segmentation)"
+                )
+                self.segformer_source = candidate["label"]
+                print(f"✅ SegFormer loaded from {candidate['label']}")
+                return
+            except Exception as e:
+                print(f"   ⚠ Failed to load from {candidate['label']}: {e}")
+
+        print("❌ SegFormer model could not be loaded from any source")
+        self.processor = None
+        self.model = None
+        self.segformer_source = None
 
     def _initialize_hairstyle_models(self):
         """Initialize hairstyle transformation models (use inpainting pipeline)"""
