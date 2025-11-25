@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container hero-content">
+        <div class="row gx-5 align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-5 fw-bold">See your next look — instantly</h1>
+                <p class="lead mt-3">Upload a front-facing photo and StyleVision will analyze your face, skin tone and hair to create 4 curated, realistic hairstyle previews — fast, private, and built for your features.</p>
+
+                <div class="row mt-4">
+                    <div class="col-6">
+                        <div class="d-flex align-items-start">
+                            <div class="step-circle me-3">1</div>
+                            <div>
+                                <strong>Upload a clear photo</strong>
+                                <div class="small-muted">Front-facing, natural lighting</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="d-flex align-items-start">
+                            <div class="step-circle me-3">2</div>
+                            <div>
+                                <strong>AI analyzes your features</strong>
+                                <div class="small-muted">Face shape, skin tone & texture</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 mt-3">
+                        <div class="d-flex align-items-start">
+                            <div class="step-circle me-3">3</div>
+                            <div>
+                                <strong>Get 4 curated previews</strong>
+                                <div class="small-muted">2 long + 2 short, tailored for you</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 mt-3">
+                        <div class="d-flex align-items-start">
+                            <div class="step-circle me-3">4</div>
+                            <div>
+                                <strong>Download or iterate</strong>
+                                <div class="small-muted">Save results or request variations</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5 offset-lg-1">
+                <div class="transformation-card p-3">
+                    <div class="p-3">
+                        <h6 class="mb-3">Upload Your Photo</h6>
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3 text-center">
+                                <div id="dropzone" class="border rounded p-3" style="background:linear-gradient(180deg,#fbfbfe,#ffffff);">
+                                    <img id="preview" src="/static/images/placeholder-face.svg" alt="preview" class="img-fluid rounded mb-2" style="max-height:200px; object-fit:cover;">
+                                    <div class="small-muted">Drag & drop a photo or click to choose</div>
+                                </div>
+                            </div>
+                            {{ form|crispy }}
+                            <div class="d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-magic me-2"></i>Generate Previews
+                                </button>
+                            </div>
+                        </form>
+                        <div class="mt-3 small muted small-muted">
+                            <strong>Tip:</strong> Use a recent photo with hair visible and a neutral background for best results.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container my-5" id="how">
+    <div class="row">
+        <div class="col-lg-6">
+            <h4 class="mb-3">How it works</h4>
+            <p class="small-muted">StyleVision combines segmentation, face analysis and a texture-preserving transformation pipeline to create recommendations that respect your natural hair texture and skin tone.</p>
+            <ul class="list-unstyled mt-3">
+                <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Private: images are processed and removed per privacy policy</li>
+                <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Balanced: 2 long + 2 short options</li>
+                <li class="mb-2"><i class="fas fa-check-circle text-primary me-2"></i>Download: save any preview in high resolution</li>
+            </ul>
+        </div>
+        <div class="col-lg-6">
+            <h4 class="mb-3">Examples</h4>
+            <div class="row g-3 examples-grid">
+                <div class="col-6"><img src="/media/Samples/haircut_0020.jpeg" alt="example haircut 0020"></div>
+                <div class="col-6"><img src="/media/Samples/haircut_0026.jpeg" alt="example haircut 0026"></div>
+                <div class="col-6"><img src="/media/Samples/haircut_0046.jpeg" alt="example haircut 0046"></div>
+                <div class="col-6"><img src="/media/Samples/haircut_0056.jpeg" alt="example haircut 0056"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Keep existing preview behavior and add click to dropzone
+    (function(){
+        const fileInput = document.querySelector('input[type=file]');
+        const preview = document.getElementById('preview');
+        const drop = document.getElementById('dropzone');
+        if(!fileInput || !preview) return;
+        drop.addEventListener('click', function(){ fileInput.click(); });
+        fileInput.addEventListener('change', function(e){
+            const f = this.files && this.files[0];
+            if(!f) return;
+            const url = URL.createObjectURL(f);
+            preview.src = url;
+        });
+        // basic drag and drop
+        drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('border-primary'); });
+        drop.addEventListener('dragleave', function(e){ drop.classList.remove('border-primary'); });
+        drop.addEventListener('drop', function(e){ e.preventDefault(); drop.classList.remove('border-primary'); if(e.dataTransfer.files && e.dataTransfer.files[0]){ fileInput.files = e.dataTransfer.files; const url = URL.createObjectURL(e.dataTransfer.files[0]); preview.src = url; } });
+    })();
+</script>
+{% endblock %}

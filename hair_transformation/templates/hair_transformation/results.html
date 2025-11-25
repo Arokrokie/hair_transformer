@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container-fluid my-5">
+    <!-- Analysis Summary -->
+    <div class="row mb-4">
+        <div class="col-12 col-xl-10 mx-auto">
+            <div class="card transformation-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Initial Analysis</h5>
+                </div>
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between gap-3 align-items-center">
+                    <div class="me-md-3" style="flex:0 0 48%;">
+                        <img src="{{ transformation.original_image.url }}" class="img-fluid rounded" alt="Original" style="max-height:420px; width:100%; object-fit:contain;">
+                    </div>
+                    <div class="flex-fill">
+                        <h6 class="mb-1">Analysis Summary</h6>
+                        <div class="small text-muted">Skin tone: <strong>{{ analysis_data.skin_tone }}</strong></div>
+                        <div class="small text-muted">Ethnicity: <strong>{{ analysis_data.ethnicity }}</strong></div>
+                        <div class="small text-muted">Face shape: <strong>{{ analysis_data.face_shape }}</strong></div>
+                        <div class="small text-muted">Hair: <strong>{{ analysis_data.hair_length }} • {{ analysis_data.hair_texture }}</strong></div>
+                        <div class="small text-muted">Hair Coverage: <strong>{% if transformation.hair_coverage %}{{ transformation.hair_coverage|floatformat:1 }}%{% else %}—{% endif %}</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <!-- Analysis Artifacts & Organized Recommendations -->
+<div class="row mb-4">
+    <div class="col-12 col-xl-10 mx-auto">
+        <div class="card transformation-card">
+            <div class="card-header">
+                <h5 class="mb-0">Analysis Artifacts & Recommendations</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center g-4">
+                    {% if transformation.hair_analysis_image %}
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div style="height: 220px; width: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <img src="{{ transformation.hair_analysis_image.url }}" class="img-fluid rounded" alt="Segmentation visualization" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            </div>
+                            <div class="mt-2 small text-muted">Segmentation Visualization</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if transformation.hair_mask_image %}
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div style="height: 220px; width: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <img src="{{ transformation.hair_mask_image.url }}" class="img-fluid rounded" alt="Segmentation mask" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            </div>
+                            <div class="mt-2 small text-muted">Segmentation Mask (hair region)</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if transformation.face_analysis_image %}
+                    <div class="col-12 col-md-4">
+                        <div class="d-flex flex-column align-items-center">
+                            <div style="height: 220px; width: 100%; display: flex; align-items: center; justify-content: center; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                                <img src="{{ transformation.face_analysis_image.url }}" class="img-fluid rounded" alt="Face analysis" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            </div>
+                            <div class="mt-2 small text-muted">Face Analysis</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <hr class="my-4">
+
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <h6 class="mb-2">Long Styles</h6>
+                        <ol>
+                            {% if long_styles %}
+                                {% for style in long_styles|slice:":4" %}
+                                    <li>{{ style.style_name }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="text-muted">No long style recommendations available.</li>
+                            {% endif %}
+                        </ol>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <h6 class="mb-2">Short Styles</h6>
+                        <ol>
+                            {% if short_styles %}
+                                {% for style in short_styles|slice:":4" %}
+                                    <li>{{ style.style_name }}</li>
+                                {% endfor %}
+                            {% else %}
+                                <li class="text-muted">No short style recommendations available.</li>
+                            {% endif %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Styles Grid - Long & Short Side by Side -->
+    <div class="row mb-4" id="styles">
+        <div class="col-12 col-xl-10 mx-auto">
+            <h4 class="mb-4">Recommended Styles</h4>
+            
+            <!-- Long Styles Section -->
+            <div class="row mb-5">
+                <div class="col-12">
+                    <h5 class="mb-4 border-bottom pb-2">Long Hair Styles</h5>
+                </div>
+                {% for style in long_styles %}
+                <div class="col-md-6 col-lg-6 mb-4">
+                    <div class="card transformation-card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4 text-center d-flex flex-column h-100">
+                            <div class="flex-grow-1 mb-3 d-flex align-items-center justify-content-center" style="min-height: 320px; background: #fafbff; padding: 20px; border-radius: 12px;">
+                                <img src="{{ style.transformed_image.url }}" class="img-fluid rounded" alt="{{ style.style_name }}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            </div>
+                            <div class="content-wrapper">
+                                <h6 class="mb-3 fw-bold">{{ style.style_name }}</h6>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{{ style.transformed_image.url }}" download class="btn btn-primary btn-md flex-fill py-2">
+                                        <i class="fas fa-download me-1"></i>Download
+                                    </a>
+                                    <button class="btn btn-outline-primary btn-md flex-fill py-2">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Short Styles Section -->
+            <div class="row">
+                <div class="col-12">
+                    <h5 class="mb-4 border-bottom pb-2">Short Hair Styles</h5>
+                </div>
+                {% for style in short_styles %}
+                <div class="col-md-6 col-lg-6 mb-4">
+                    <div class="card transformation-card h-100 border-0 shadow-sm">
+                        <div class="card-body p-4 text-center d-flex flex-column h-100">
+                            <div class="flex-grow-1 mb-3 d-flex align-items-center justify-content-center" style="min-height: 320px; background: #fafbff; padding: 20px; border-radius: 12px;">
+                                <img src="{{ style.transformed_image.url }}" class="img-fluid rounded" alt="{{ style.style_name }}" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+                            </div>
+                            <div class="content-wrapper">
+                                <h6 class="mb-3 fw-bold">{{ style.style_name }}</h6>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <a href="{{ style.transformed_image.url }}" download class="btn btn-primary btn-md flex-fill py-2">
+                                        <i class="fas fa-download me-1"></i>Download
+                                    </a>
+                                    <button class="btn btn-outline-primary btn-md flex-fill py-2">
+                                        <i class="fas fa-eye me-1"></i>View
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Recommendations -->
+    <div class="row mb-4">
+        <div class="col-12 col-xl-10 mx-auto">
+            <div class="card transformation-card">
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between gap-3 align-items-center">
+                    <div class="flex-fill">
+                        <h5 class="mb-1">Recommended Colors</h5>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% if color_swatches %}
+                                {% for c in color_swatches %}
+                                    <div class="p-2 rounded text-center" style="min-width:110px;background:#fff;border:1px solid rgba(0,0,0,0.04)">
+                                        <div class="color-swatch" data-hex="{{ c.hex }}" style="height:36px;width:100%;border-radius:6px;margin-bottom:8px;"></div>
+                                        <small class="d-block">{{ c.name }}</small>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-muted">No color recommendations available.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="#styles" class="btn btn-outline-primary btn-sm">View All Styles</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <a href="{% url 'home' %}" class="btn btn-lg btn-primary"><i class="fas fa-redo me-2"></i>Try Another Photo</a>
+        </div>
+    </div>
+    
+    <script>
+    // Apply color swatches from data-hex attributes and set readable label color
+    document.addEventListener('DOMContentLoaded', function () {
+        function hexToLuma(hex) {
+            if (!hex) return 1;
+            // strip #
+            hex = hex.replace('#','');
+            if (hex.length === 3) {
+                hex = hex.split('').map(function (h) { return h+h; }).join('');
+            }
+            var r = parseInt(hex.substr(0,2),16);
+            var g = parseInt(hex.substr(2,2),16);
+            var b = parseInt(hex.substr(4,2),16);
+            // Perceived luminance
+            return (0.299*r + 0.587*g + 0.114*b)/255;
+        }
+
+        document.querySelectorAll('.color-swatch[data-hex]').forEach(function(el){
+            var hex = el.getAttribute('data-hex');
+            if (hex && hex !== 'None' && hex !== 'null') {
+                el.style.background = hex;
+                var luma = hexToLuma(hex);
+                var label = el.nextElementSibling;
+                if(label) label.style.color = (luma < 0.5) ? '#fff' : '#111';
+            }
+        });
+    });
+    </script>
+</div>
+{% endblock %}
