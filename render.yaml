@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: hair-transformer
+    env: python
+    buildCommand: |
+      pip install -U pip
+      pip install --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.9.0 torchvision==0.24.0
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    startCommand: gunicorn hair_project.wsgi --bind 0.0.0.0:$PORT --timeout 300 --workers 1 --worker-class sync --max-requests 100 --max-requests-jitter 10 --preload
+    plan: starter
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.19
+      - key: DJANGO_SETTINGS_MODULE
+        value: hair_project.settings
+      - key: DISABLE_COLLECTSTATIC
+        value: 1
